@@ -8,67 +8,137 @@ const app = express();
 app.use(express.json({ limit: "20mb" }));
 app.use(cors());
 
-// HEALTHCHECK
+/* =========================================
+   HEALTHCHECK
+========================================= */
+
 app.get("/", (req, res) => {
-  res.send("API OK");
+
+    res.send("API OK");
+
 });
+
+/* =========================================
+   UPLOAD PDF
+========================================= */
 
 app.post("/upload", async (req, res) => {
 
-  try {
+    try {
 
-    const {
-      url,
-      fileName,
-      fileContent
-    } = req.body;
+        const {
+            url,
+            token,
+            fileName,
+            fileContent
+        } = req.body;
 
-    // VALIDACIONES
-    if (!url || !fileName || !fileContent) {
+        /* =========================================
+           VALIDACIONES
+        ========================================= */
 
-      return res.status(400).json({
-        error: "Missing parameters"
-      });
-    }
+        if (!url || !token || !fileName || !fileContent) {
 
-    const buffer = Buffer.from(fileContent, "base64");
-
-    const form = new FormData();
-
-    form.append("file", buffer, fileName);
-
-    const response = await axios.post(
-      url,
-      form,
-      {
-        headers: {
-          ...form.getHeaders(),
-          apiToken: process.env.ESIGN_TOKEN
+            return res.status(400).json({
+                success: false,
+                error: "Missing parameters"
+            });
         }
-      }
-    );
 
-    res.json(response.data);
+        /* =========================================
+           BASE64 → BUFFER
+        ========================================= */
 
-  } catch (error) {
+        const buffer = Buffer.from(
+            fileContent,
+            "base64"
+        );
 
-    console.error(
-      error.response?.data || error.message
-    );
+        /* =========================================
+           FORM DATA
+        ========================================= */
 
-    res.status(500).json(
-      error.response?.data || {
-        error: "Upload failed"
-      }
-    );
-  }
+        const form = new FormData();
+
+        form.append(
+            "file",
+            buffer,
+            fileName
+        );
+
+        /* =========================================
+           REQUEST ESIGN
+        ========================================= */
+
+        const response = await axios.post(
+            url,
+            form,
+            {
+                headers: {
+                    ...form.getHeaders(),
+                    apiToken: token
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            }
+        );
+
+        /* =========================================
+           RESPUESTA OK
+        ========================================= */
+
+        res.json({
+            success: true,
+            data: response.data
+        });
+
+    } catch (error) {
+
+        console.error("ERROR:");
+
+        console.error(error.message);
+
+        console.error(error.response?.status);
+
+        console.error(
+            JSON.stringify(
+                error.response?.data,
+                null,
+                2
+            )
+        );
+
+        /* =========================================
+           RESPUESTA ERROR
+        ========================================= */
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message,
+
+            status: error.response?.status,
+
+            response: error.response?.data ||
+
+            {
+                error: "Upload failed"
+            }
+        });
+    }
 });
 
-// PORT RAILWAY
+/* =========================================
+   PORT
+========================================= */
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-  console.log(`Server running on port ${PORT}`);
+    console.log(
+        `Server running on port ${PORT}`
+    );
 
 });
