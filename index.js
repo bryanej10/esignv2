@@ -22,9 +22,13 @@ app.get("/", (req, res) => {
    UPLOAD PDF
 ========================================= */
 
-app.post("/upload", async (req, res) => {
+app.get("/upload", (req, res) => {
 
    res.send("Endpoint upload activo");
+
+});
+
+app.post("/upload", async (req, res) => {
 
     try {
 
