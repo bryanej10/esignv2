@@ -24,6 +24,8 @@ app.get("/", (req, res) => {
 
 app.post("/upload", async (req, res) => {
 
+   res.send("Endpoint upload activo");
+
     try {
 
         const {
